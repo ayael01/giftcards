@@ -37,6 +37,7 @@ API base URL: `http://localhost:8000`
 
 ```bash
 cd frontend
+cp .env.example .env
 npm install
 npm run dev
 ```
@@ -63,3 +64,35 @@ Frontend URL: `http://localhost:5173`
 
 - Tables are auto-created on backend startup via SQLAlchemy metadata.
 - This MVP assumes a single local user (no authentication).
+
+## Cloud deployment (free-tier friendly)
+
+This repository is prepared for:
+- Backend + PostgreSQL: Render
+- Frontend: Vercel
+
+### 1) Deploy backend + DB on Render
+
+1. In Render, create a new **Blueprint** and point it to this GitHub repo.
+2. Render will read [`render.yaml`](/Users/eliayash/Projects/giftcards/render.yaml) and create:
+   - `giftcards-db` PostgreSQL database
+   - `giftcards-api` FastAPI web service
+3. After first deploy, copy your frontend URL (from Vercel step below) into Render env var:
+   - `FRONTEND_ORIGINS=https://<your-vercel-app>.vercel.app`
+4. Redeploy `giftcards-api`.
+
+### 2) Deploy frontend on Vercel
+
+1. Create a new Vercel project from this repo.
+2. Set the **Root Directory** to `frontend`.
+3. Add environment variable:
+   - `VITE_API_BASE_URL=https://<your-render-api>.onrender.com`
+4. Deploy.
+
+### 3) Connect both sides
+
+- Ensure Render `FRONTEND_ORIGINS` is the exact Vercel URL.
+- Ensure Vercel `VITE_API_BASE_URL` is the exact Render API URL.
+- Test:
+  - `GET https://<render-api>/health`
+  - Open Vercel app and run merchant search.
