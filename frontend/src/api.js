@@ -20,6 +20,8 @@ export const api = {
     request("/admin/gift-card-types", { method: "POST", body: JSON.stringify(payload) }),
 
   listMerchants: () => request("/admin/merchants"),
+  suggestMerchants: (prefix, limit = 8) =>
+    request(`/admin/merchants/suggest?prefix=${encodeURIComponent(prefix)}&limit=${limit}`),
   createMerchant: (payload) =>
     request("/admin/merchants", { method: "POST", body: JSON.stringify(payload) }),
 

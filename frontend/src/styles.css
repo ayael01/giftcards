@@ -129,6 +129,44 @@ form {
   grid-template-columns: 1fr auto;
 }
 
+.search-autocomplete {
+  position: relative;
+}
+
+.suggestions-list {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 28px -18px rgba(17, 32, 53, 0.5);
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.suggestion-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  padding: 0.5rem 0.6rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+  background: #e7eef7;
+  color: #17385c;
+  transform: none;
+}
+
 input,
 select,
 button,

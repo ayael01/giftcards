@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -50,6 +50,25 @@ def create_merchant(payload: MerchantCreate, db: Session = Depends(get_db)):
 @router.get("/merchants", response_model=list[MerchantRead])
 def list_merchants(db: Session = Depends(get_db)):
     return db.query(Merchant).order_by(Merchant.name.asc()).all()
+
+
+@router.get("/merchants/suggest", response_model=list[MerchantRead])
+def suggest_merchants(
+    prefix: str = Query(min_length=1),
+    limit: int = Query(default=8, ge=1, le=20),
+    db: Session = Depends(get_db),
+):
+    normalized_prefix = prefix.strip()
+    if not normalized_prefix:
+        return []
+
+    return (
+        db.query(Merchant)
+        .filter(Merchant.name.ilike(f"{normalized_prefix}%"))
+        .order_by(Merchant.name.asc())
+        .limit(limit)
+        .all()
+    )
 
 
 @router.post(

@@ -36,6 +36,9 @@ export default function App() {
   const [activeView, setActiveView] = useState("wallet");
   const [linkSearch, setLinkSearch] = useState("");
   const [selectedMerchantByType, setSelectedMerchantByType] = useState({});
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
 
   const totalBalance = userGiftCards.reduce((sum, card) => sum + Number(card.balance), 0);
 
@@ -60,6 +63,35 @@ export default function App() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (activeView !== "wallet") {
+      setShowSuggestions(false);
+      return;
+    }
+
+    const query = searchTerm.trim();
+    if (!query) {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      setActiveSuggestionIndex(-1);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const suggestions = await api.suggestMerchants(query, 8);
+        setSearchSuggestions(suggestions);
+        setShowSuggestions(suggestions.length > 0);
+        setActiveSuggestionIndex(-1);
+      } catch {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 150);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, activeView]);
 
   const linksByType = useMemo(() => {
     return giftCardTypes.map((type) => {
@@ -190,14 +222,61 @@ export default function App() {
     }
   }
 
-  async function onSearch(e) {
-    e.preventDefault();
+  async function runSearch(term) {
     try {
       setError("");
-      const results = await api.searchByMerchant(searchTerm);
+      const trimmedTerm = term.trim();
+      if (!trimmedTerm) {
+        setSearchResults([]);
+        return;
+      }
+      const results = await api.searchByMerchant(trimmedTerm);
       setSearchResults(results);
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function onSearch(e) {
+    e.preventDefault();
+    setShowSuggestions(false);
+    await runSearch(searchTerm);
+  }
+
+  async function onSelectSuggestion(merchantName) {
+    setSearchTerm(merchantName);
+    setShowSuggestions(false);
+    setActiveSuggestionIndex(-1);
+    await runSearch(merchantName);
+  }
+
+  async function onSearchKeyDown(e) {
+    if (!showSuggestions || searchSuggestions.length === 0) {
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveSuggestionIndex((prev) => (prev + 1) % searchSuggestions.length);
+      return;
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveSuggestionIndex((prev) => (prev <= 0 ? searchSuggestions.length - 1 : prev - 1));
+      return;
+    }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setShowSuggestions(false);
+      setActiveSuggestionIndex(-1);
+      return;
+    }
+
+    if (e.key === "Enter" && activeSuggestionIndex >= 0) {
+      e.preventDefault();
+      await onSelectSuggestion(searchSuggestions[activeSuggestionIndex].name);
     }
   }
 
@@ -247,12 +326,33 @@ export default function App() {
           <section className="panel search-panel reveal">
             <h2>Search By Merchant</h2>
             <form className="row-form" onSubmit={onSearch}>
-              <input
-                placeholder="Try: Golf, Fox, Super-Pharm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                required
-              />
+              <div className="search-autocomplete">
+                <input
+                  placeholder="Try: Golf, Fox, Super-Pharm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => setShowSuggestions(searchSuggestions.length > 0)}
+                  onBlur={() => {
+                    setTimeout(() => setShowSuggestions(false), 120);
+                  }}
+                  onKeyDown={onSearchKeyDown}
+                  required
+                />
+                {showSuggestions && (
+                  <div className="suggestions-list">
+                    {searchSuggestions.map((suggestion, index) => (
+                      <button
+                        key={suggestion.id}
+                        type="button"
+                        className={index === activeSuggestionIndex ? "suggestion-item active" : "suggestion-item"}
+                        onMouseDown={() => onSelectSuggestion(suggestion.name)}
+                      >
+                        {suggestion.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button type="submit">Find Matching Cards</button>
             </form>
             <div className="result-grid">

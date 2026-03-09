@@ -49,6 +49,7 @@ Frontend URL: `http://localhost:5173`
 - `GET /admin/gift-card-types`
 - `POST /admin/merchants`
 - `GET /admin/merchants`
+- `GET /admin/merchants/suggest?prefix=Go&limit=8`
 - `POST /admin/gift-card-types/{giftcard_type_id}/merchants/{merchant_id}`
 - `GET /admin/gift-card-type-merchants`
 - `DELETE /admin/gift-card-types/{giftcard_type_id}/merchants/{merchant_id}`
